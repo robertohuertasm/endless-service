@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.widget.Toast
 import java.text.SimpleDateFormat
@@ -59,6 +60,16 @@ class EndlessService : Service() {
         Toast.makeText(this, "Service destroyed", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent) {
+        val restartServiceIntent = Intent(applicationContext, EndlessService::class.java).also {
+            it.setPackage(packageName)
+        };
+        val restartServicePendingIntent: PendingIntent = PendingIntent.getService(this, 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT);
+        applicationContext.getSystemService(Context.ALARM_SERVICE);
+        val alarmService: AlarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager;
+        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePendingIntent);
+    }
+    
     private fun startService() {
         if (isServiceStarted) return
         log("Starting the foreground service task")
