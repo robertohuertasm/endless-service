@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.widget.Toast
 import java.text.SimpleDateFormat
@@ -39,7 +40,7 @@ class EndlessService : Service() {
             }
         } else {
             log(
-                "with a null intent. It has been probably restarted by the system."
+                    "with a null intent. It has been probably restarted by the system."
             )
         }
         // by returning this we make sure the service is restarted if the system kills the service
@@ -59,6 +60,16 @@ class EndlessService : Service() {
         Toast.makeText(this, "Service destroyed", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent) {
+        val restartServiceIntent = Intent(applicationContext, EndlessService::class.java).also {
+            it.setPackage(packageName)
+        };
+        val restartServicePendingIntent: PendingIntent = PendingIntent.getService(this, 1, restartServiceIntent, PendingIntent.FLAG_ONE_SHOT);
+        applicationContext.getSystemService(Context.ALARM_SERVICE);
+        val alarmService: AlarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager;
+        alarmService.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 1000, restartServicePendingIntent);
+    }
+
     private fun startService() {
         if (isServiceStarted) return
         log("Starting the foreground service task")
@@ -68,11 +79,11 @@ class EndlessService : Service() {
 
         // we need this lock so our service gets not affected by Doze Mode
         wakeLock =
-            (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-                newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EndlessService::lock").apply {
-                    acquire()
+                (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+                    newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EndlessService::lock").apply {
+                        acquire()
+                    }
                 }
-            }
 
         // we're starting a loop in a coroutine
         GlobalScope.launch(Dispatchers.IO) {
@@ -111,7 +122,7 @@ class EndlessService : Service() {
         val deviceId = Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
 
         val json =
-            """
+                """
                 {
                     "deviceId": "$deviceId",
                     "createdAt": "$gmtTime"
@@ -119,15 +130,15 @@ class EndlessService : Service() {
             """
         try {
             Fuel.post("https://jsonplaceholder.typicode.com/posts")
-                .jsonBody(json)
-                .response { _, _, result ->
-                    val (bytes, error) = result
-                    if (bytes != null) {
-                        log("[response bytes] ${String(bytes)}")
-                    } else {
-                        log("[response error] ${error?.message}")
+                    .jsonBody(json)
+                    .response { _, _, result ->
+                        val (bytes, error) = result
+                        if (bytes != null) {
+                            log("[response bytes] ${String(bytes)}")
+                        } else {
+                            log("[response error] ${error?.message}")
+                        }
                     }
-                }
         } catch (e: Exception) {
             log("Error making the request: ${e.message}")
         }
@@ -141,9 +152,9 @@ class EndlessService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(
-                notificationChannelId,
-                "Endless Service notifications channel",
-                NotificationManager.IMPORTANCE_HIGH
+                    notificationChannelId,
+                    "Endless Service notifications channel",
+                    NotificationManager.IMPORTANCE_HIGH
             ).let {
                 it.description = "Endless Service channel"
                 it.enableLights(true)
@@ -160,17 +171,17 @@ class EndlessService : Service() {
         }
 
         val builder: Notification.Builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(
-            this,
-            notificationChannelId
+                this,
+                notificationChannelId
         ) else Notification.Builder(this)
 
         return builder
-            .setContentTitle("Endless Service")
-            .setContentText("This is your favorite endless service working")
-            .setContentIntent(pendingIntent)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setTicker("Ticker text")
-            .setPriority(Notification.PRIORITY_HIGH) // for under android 26 compatibility
-            .build()
+                .setContentTitle("Endless Service")
+                .setContentText("This is your favorite endless service working")
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setTicker("Ticker text")
+                .setPriority(Notification.PRIORITY_HIGH) // for under android 26 compatibility
+                .build()
     }
 }
