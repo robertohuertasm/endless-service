@@ -16,6 +16,7 @@ class MainActivity : AppCompatActivity() {
         title = "Endless Service"
 
         findViewById<Button>(R.id.btnStartService).let {
+            forceRestart = true
             it.setOnClickListener {
                 log("START THE FOREGROUND SERVICE ON DEMAND")
                 actionOnService(Actions.START)
@@ -23,6 +24,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnStopService).let {
+            forceRestart = false
             it.setOnClickListener {
                 log("STOP THE FOREGROUND SERVICE ON DEMAND")
                 actionOnService(Actions.STOP)
