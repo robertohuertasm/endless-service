@@ -10,6 +10,7 @@ enum class ServiceState {
 
 private const val name = "SPYSERVICE_KEY"
 private const val key = "SPYSERVICE_STATE"
+var forceRestart: Boolean = true
 
 fun setServiceState(context: Context, state: ServiceState) {
     val sharedPrefs = getPreferences(context)
@@ -22,6 +23,9 @@ fun setServiceState(context: Context, state: ServiceState) {
 fun getServiceState(context: Context): ServiceState {
     val sharedPrefs = getPreferences(context)
     val value = sharedPrefs.getString(key, ServiceState.STOPPED.name)
+    if (value == ServiceState.STOPPED.name) {
+        forceRestart = false
+    }
     return ServiceState.valueOf(value)
 }
 
